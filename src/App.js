@@ -1,24 +1,23 @@
-import logo from './logo.svg';
+import './components/Sidebar/styles.js'
 import './App.css';
+import Skipjack from './components/Pages/BlockCiphers/Skipjack/Skipjack'
+import { BrowserRouter as Switch, Routes, Route } from "react-router-dom";
+import SideBar from './components/Sidebar/Sidebar';
+import StickyBox from "react-sticky-box";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ display: "flex", alignItems: "flex-start" }}>
+      <Switch>
+        <StickyBox>
+          <SideBar />
+        </StickyBox>
+        <Routes postion>
+          <Route path="/skipjack" element={<Skipjack />} />
+        </Routes>
+      </Switch>
     </div>
+
   );
 }
 
