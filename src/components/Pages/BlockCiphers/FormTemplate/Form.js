@@ -7,9 +7,9 @@ import {
 } from './Auxiliary'
 
 import {
-    SelectInput, Input, ErrorMessage,
-    Mode, SelectMode, InputIV,
-    Key, InputKey,
+    SelectInput, Input, ErrorMessage, InputBox,
+    Mode, SelectMode, InputIV, GenerateIV,
+    Key, InputKey, KeyButton,
     Execution, Encrypt, Decrypt,
     Output, SelectOutput, OutputBox
 
@@ -28,24 +28,26 @@ export default class Form extends Component {
             input: null,
 
             selectedMode: "ECB",
-
+            inputIV: null,
 
             key: null,
 
             errors: {
                 input: '',
                 key: '',
+                inputIV: '',
             }
         };
 
     }
 
-    createIV = (event) => {
-        document.getElementById("inputIV").value = new RandExp('^([0-9A-Fa-f]{2}[ ]){' + this.props.IVlength + '}([0-9A-Fa-f]{2})$').gen();
+    createRandomIV = () => {
+        document.getElementById("inputIV").value = new RandExp(this.props.IVFormat).gen();
+        this.setState({ inputIV: document.getElementById("inputIV").value });
     }
 
-    createKey = (event) => {
-        document.getElementById("key").value = new RandExp('^([0-9A-Fa-f]{2}[ ]){' + this.props.Keylength + '}([0-9A-Fa-f]{2})$').gen();
+    createRandomKey = () => {
+        document.getElementById("key").value = new RandExp(this.props.KeyFormat).gen();
         this.setState({ key: document.getElementById("key").value });
     }
 
@@ -57,13 +59,23 @@ export default class Form extends Component {
         this.setState({ selectedMode: event.target.value });
         if (event.target.value === "ECB") {
             document.getElementById('inputIV').disabled = true;
+            document.getElementById('generateIV').disabled = true;
             document.getElementById('inputIV').placeholder = "IV not required for ECB";
         } else {
             document.getElementById('inputIV').disabled = false;
+            document.getElementById('generateIV').disabled = false;
             document.getElementById('inputIV').placeholder = "Enter IV";
+            document.getElementById('generateIV').onclick = this.createRandomIV;
         }
     }
 
+    validateForm = (errors) => {
+        let valid = true;
+        Object.values(errors).forEach(
+            (val) => val.length > 0 && (valid = false)
+        );
+        return valid;
+    }
 
     handleChange = (event) => {
         event.preventDefault();
@@ -84,26 +96,34 @@ export default class Form extends Component {
                     break;
                 }
             case 'key':
-                errors.key = this.props.KeyFormat.test(value)
+                errors.key = RegExp(this.props.KeyFormat).test(value)
                     ? ''
-                    : 'Invalid key. Please type in hex a key of 10 bytes';
+                    : 'Invalid key. Please type in hex a key of ' + this.props.KeyLength + ' bytes';
                 break;
+            case 'inputIV':
+                if (this.state.selectedMode !== 'ECB') {
+                    errors.inputIV = RegExp(this.props.IVFormat).test(value)
+                        ? ''
+                        : 'Invalid IV. Please type in hex a IV of ' + this.props.IVLength + ' bytes';
+                    break;
+                }
+
         }
         this.setState({ errors, [name]: value });
     };
 
-    encrypt = () => {
-        //document.getElementById("output").value = hexList(this.props.size, this.state.input.replace(/\s/g, ''));
-        //document.getElementById("output").value = inputKey(this.state.key.replace(/\s/g, ''));
-        //document.getElementById("output").value = this.state.selectedMode;
+    encrypt = (event) => {
+        if (this.validateForm(this.state.errors)) {
+            document.getElementById("output").value = this.props.ENCRYPT(
+                hexList(this.props.size, padding(this.state.input.replace(/\s/g, ''))),
+                inputKey(this.state.key.replace(/\s/g, '')),
+                this.state.selectedMode,
+                " "
+            );
+        } else {
+            document.getElementById("output").value = "Invalid or Incomplete submission."
+        }
 
-
-        document.getElementById("output").value = this.props.ENCRYPT(
-            hexList(this.props.size, padding(this.state.input.replace(/\s/g, ''))),
-            inputKey(this.state.key.replace(/\s/g, '')),
-            this.state.selectedMode,
-            " "
-        );
     }
 
 
@@ -112,6 +132,7 @@ export default class Form extends Component {
         const { errors } = this.state;
         return (
             <div>
+                {/*Input Section*/}
                 <Input>
                     {/* Select form for Input formats */}
                     <SelectInput>
@@ -122,35 +143,49 @@ export default class Form extends Component {
                     </SelectInput>
 
                     {/* Input form */}
-                    <textarea name='input' placeholder="Type input here" onChange={this.handleChange} noValidate />
+                    <InputBox name='input' placeholder="Type input here" onChange={this.handleChange} noValidate />
+
+                    {/* Error Message informing users to submit valid input*/}
                     <ErrorMessage>
                         {errors.input.length > 0 &&
                             <span>{errors.input}</span>}
                     </ErrorMessage>
                 </Input>
 
+                {/*Modes of operation section*/}
                 <Mode>
+                    {/* Selection menu where users can choose a mode of operation to Encrypt and Decrypt inputs*/}
                     <SelectMode onChange={this.setModeOption}>
-                        <option value=""> Select Mode </option>
                         <option value="ECB">ECB - Electronic Codebook</option>
                         <option value="CBC">CBC - Cipher block chaining</option>
                         <option value="CFB">CFB - Cipher feedback</option>
                         <option value="OFB">OFB - Output feedback</option>
                     </SelectMode>
 
-                    <InputIV placeholder="Enter IV" id="inputIV" />
+                    {/*Input box to submit valid Initialization Vector*/}
+                    <InputIV name='inputIV' id="inputIV" disabled='true' placeholder="IV not required for ECB" onChange={this.handleChange} noValidate />
 
-                    <button onClick={this.createIV}> Generate random IV </button>
+                    <GenerateIV id='generateIV' disabled='true'> Generate random IV </GenerateIV>
+
+                    <ErrorMessage>
+                        {errors.inputIV.length > 0 &&
+                            <span>{errors.inputIV}</span>}
+                    </ErrorMessage>
+
+
                 </Mode>
+
 
                 <Key>
                     <InputKey name='key' placeholder="Enter key" id="key" onChange={this.handleChange} noValidate></InputKey>
-                    <button onClick={this.createKey}> Genenerate random key </button>
+
+                    <KeyButton onClick={this.createRandomKey}> Genenerate random key </KeyButton>
 
                     <ErrorMessage>
                         {errors.key.length > 0 &&
                             <span>{errors.key}</span>}
-                    </ErrorMessage>
+
+                    </ErrorMessage >
 
                 </Key>
 
@@ -169,7 +204,6 @@ export default class Form extends Component {
                     </OutputBox>
                 </Output>
             </div>
-
         );
     }
 }

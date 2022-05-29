@@ -1,4 +1,4 @@
-import { Page, Space } from '../FormTemplate/styles.js'
+import { Space } from '../FormTemplate/styles.js'
 import Form from '../FormTemplate/Form'
 import {
     padding,
@@ -9,10 +9,11 @@ import {
 const Skipjack = () => {
     return <Space>
         <Form
-            IVlength="7"
-            Keylength="9"
             size={64 / 4}
-            KeyFormat={RegExp('^([0-9A-Fa-f]{2}[ ]){9}([0-9A-Fa-f]{2})$')}
+            IVFormat="^([0-9A-Fa-f]{2}[ ]){7}([0-9A-Fa-f]{2})$"
+            IVLength={8}
+            KeyFormat="^([0-9A-Fa-f]{2}[ ]){9}([0-9A-Fa-f]{2})$"
+            KeyLength={10}
             ENCRYPT={ENCRYPT}
         />
     </Space>;
@@ -20,15 +21,13 @@ const Skipjack = () => {
 
 export default Skipjack;
 
-//00 99 88 77 66 55 44 33 22 11
 
-export const ENCRYPT = (stringList, key, option, IV) => {
+export const ENCRYPT = (inputList, key, option, IV) => {
 
     let List = [];
-    let result = '';
 
-    for (let i = 0; i < stringList.length; i++) {
-        List.push(new skipjack(stringList[i], key));
+    for (let i = 0; i < inputList.length; i++) {
+        List.push(new skipjack(inputList[i], key));
     };
 
     if (option == 'ECB') {
